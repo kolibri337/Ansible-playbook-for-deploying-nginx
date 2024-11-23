@@ -1,0 +1,29 @@
+- name: Install new nginx
+  hosts: all
+  become: yes
+
+  tasks:
+    - name: Start new nginx version
+      docker_container:
+        name: nginx-new-version
+        image: nginx:1.25
+        ports:
+          - "8081:80"
+        volumes:
+          - ./index.html:/usr/share/nginx/html/index.html
+
+    - name: Update nginx configuration on host
+      lineinfile:
+        path: /etc/nginx/sites-available/default
+        regexp: 'server 127.0.0.1:8080;'
+        line: 'server 127.0.0.1:8081;'
+
+    - name: Restart nginx on host
+      systemd:
+        name: nginx
+        state: restarted
+
+    - name: Stop old container
+      docker_container:
+        name: nginx-old-version
+        state: stopped
